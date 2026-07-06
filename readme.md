@@ -11,6 +11,7 @@ The project demonstrates user authentication, JWT-protected routes, MongoDB pers
 - Express
 - MongoDB
 - Mongoose
+- Render
 - JWT
 - bcryptjs
 - Joi
@@ -74,7 +75,7 @@ DB_URI=mongodb+srv://username:password@cluster.mongodb.net/db-contacts?retryWrit
 SECRET_KEY=your_jwt_secret
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASSWORD=your_google_app_password
-BASE_URL=http://localhost:3000
+BASE_URL=https://twoj-backend.onrender.com
 ```
 
 `EMAIL_PASSWORD` should be a Google App Password, not the regular Gmail account password.
@@ -109,7 +110,7 @@ Server running. Use our API on port: 3000
 Base URL:
 
 ```txt
-http://localhost:3000
+https://twoj-backend.onrender.com
 ```
 
 ## Auth Routes
