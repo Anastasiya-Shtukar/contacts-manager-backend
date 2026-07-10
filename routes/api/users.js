@@ -49,17 +49,22 @@ router.post("/signup", async (req, res) => {
 
     const verifyUrl = `${process.env.BASE_URL}/api/users/verify/${verificationToken}`;
 
-    await sendEmail({
-      to: newUser.email,
-      subject: "E-mail verification",
-      html: `
-    <p>Welcome ${newUser.email},</p>
-    <p>Click the link below to verify your email:</p>
-    <a href="${verifyUrl}">Verify email</a>
-  `,
-    });
-
     await newUser.save();
+
+    try {
+      await sendEmail({
+        to: newUser.email,
+        subject: "E-mail verification",
+        html: `
+      <p>Welcome ${newUser.email},</p>
+      <p>Click the link below to verify your email:</p>
+      <a href="${verifyUrl}">Verify email</a>
+    `,
+      });
+    } catch (emailError) {
+      await User.findByIdAndDelete(newUser._id);
+      throw emailError;
+    }
 
     res.status(201).json({
       user: {
