@@ -47,8 +47,6 @@ router.post("/signup", async (req, res) => {
       verify: false,
     });
 
-    await newUser.save();
-
     const verifyUrl = `${process.env.BASE_URL}/api/users/verify/${verificationToken}`;
 
     await sendEmail({
@@ -60,6 +58,8 @@ router.post("/signup", async (req, res) => {
     <a href="${verifyUrl}">Verify email</a>
   `,
     });
+
+    await newUser.save();
 
     res.status(201).json({
       user: {
