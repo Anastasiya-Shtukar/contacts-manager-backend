@@ -1,26 +1,20 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const { EMAIL_USER, EMAIL_PASSWORD } = process.env;
-
-if (!EMAIL_USER || !EMAIL_PASSWORD) {
-  throw new Error("Missing EMAIL_USER or EMAIL_PASSWORD in environment");
-}
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASSWORD,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
-  return transporter.sendMail({
-    from: EMAIL_USER,
+  const { data, error } = await resend.emails.send({
+    from: process.env.EMAIL_FROM,
     to,
     subject,
     html,
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 };
 
 module.exports = sendEmail;
