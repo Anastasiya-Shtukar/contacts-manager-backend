@@ -1,20 +1,33 @@
-const { Resend } = require("resend");
+const { BrevoClient } = require("@getbrevo/brevo");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const { BREVO_API_KEY, EMAIL_FROM } = process.env;
+
+if (!BREVO_API_KEY) {
+  throw new Error("Missing BREVO_API_KEY in environment");
+}
+
+if (!EMAIL_FROM) {
+  throw new Error("Missing EMAIL_FROM in environment");
+}
+
+const brevo = new BrevoClient({
+  apiKey: BREVO_API_KEY,
+});
 
 const sendEmail = async ({ to, subject, html }) => {
-  const { data, error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM,
-    to,
-    subject,
-    html,
-  });
-
-  if (error) {
-    throw new Error(error.message);
+  if (!to || !subject || !html) {
+    throw new Error("Missing required email fields");
   }
 
-  return data;
+  return brevo.transactionalEmails.sendTransacEmail({
+    sender: {
+      name: "Contacts Manager",
+      email: EMAIL_FROM,
+    },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  });
 };
 
 module.exports = sendEmail;
