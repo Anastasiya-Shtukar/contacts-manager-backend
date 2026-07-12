@@ -1,7 +1,7 @@
-# Fullstack Contacts Manager
+# Contacts Manager Backend
 
-Backend project for a fullstack contacts manager application.  
-The project demonstrates user authentication, JWT-protected routes, MongoDB persistence, contacts CRUD, avatar upload, and basic email verification.
+REST API for a fullstack contacts manager application.  
+The project provides user authentication, email verification, JWT-protected routes, MongoDB persistence, contacts CRUD, and avatar upload.
 
 > This is not intended to be a production SaaS app. Its purpose is to show solid fullstack fundamentals with Node.js, Express, MongoDB, JWT auth, and REST API integration.
 
@@ -17,7 +17,7 @@ The project demonstrates user authentication, JWT-protected routes, MongoDB pers
 - Joi
 - Multer
 - Jimp
-- Nodemailer
+- Brevo Transactional Email API
 - Gravatar
 - Morgan
 - CORS
@@ -26,7 +26,7 @@ The project demonstrates user authentication, JWT-protected routes, MongoDB pers
 ## Features
 
 - User registration
-- Email verification
+- Email verification through Brevo
 - Login with JWT
 - Logout
 - Current user endpoint
@@ -35,6 +35,7 @@ The project demonstrates user authentication, JWT-protected routes, MongoDB pers
 - Favorite contact status update
 - Avatar upload and resizing
 - MongoDB Atlas integration
+- Registration rollback when a verification email cannot be sent
 
 ## Project Structure
 
@@ -73,12 +74,20 @@ Create a `.env` file in the project root:
 PORT=3000
 DB_URI=mongodb+srv://username:password@cluster.mongodb.net/db-contacts?retryWrites=true&w=majority
 SECRET_KEY=your_jwt_secret
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_google_app_password
-BASE_URL=https://twoj-backend.onrender.com
+BREVO_API_KEY=your_brevo_api_key
+EMAIL_FROM=your_verified_brevo_sender@example.com
+BASE_URL=https://contacts-manager-backend-q2pb.onrender.com
+FRONTEND_URL=https://your-frontend.example.com
 ```
 
-`EMAIL_PASSWORD` should be a Google App Password, not the regular Gmail account password.
+- `DB_URI` is the MongoDB connection string.
+- `SECRET_KEY` is used to sign JWT access tokens.
+- `BREVO_API_KEY` must be generated in Brevo under **Settings → SMTP & API → API Keys**.
+- `EMAIL_FROM` must match a verified sender in Brevo under **Settings → Senders, domains, IPs → Senders**.
+- `BASE_URL` is used to build email verification links and should not end with `/`.
+- `FRONTEND_URL` is the deployed frontend address and should not end with `/`. After email verification, the user is redirected to its `/login` page.
+
+Never commit `.env` or expose API keys in source code, screenshots, logs, or documentation. Add the same environment variables to the deployed Render service under **Environment**.
 
 ## Installation
 
@@ -92,10 +101,16 @@ npm install
 node server.js
 ```
 
-Or, if nodemon is configured:
+Development mode with Nodemon:
 
 ```bash
-npm run dev
+npm run start:dev
+```
+
+Production mode:
+
+```bash
+npm start
 ```
 
 Expected output:
@@ -110,7 +125,7 @@ Server running. Use our API on port: 3000
 Base URL:
 
 ```txt
-https://twoj-backend.onrender.com
+https://contacts-manager-backend-q2pb.onrender.com
 ```
 
 ## Auth Routes
@@ -142,7 +157,7 @@ Response:
 }
 ```
 
-After registration, the server sends an email verification link.
+After registration, the server sends a verification link using the Brevo Transactional Email API. If sending fails, the newly created database record is removed so that registration can be attempted again.
 
 ### Verify Email
 
@@ -150,13 +165,13 @@ After registration, the server sends an email verification link.
 GET /api/users/verify/:verificationToken
 ```
 
-Response:
+On success, the endpoint redirects to:
 
-```json
-{
-  "message": "Verification successful"
-}
+```txt
+FRONTEND_URL/login?verified=true
 ```
+
+An invalid token redirects with `verified=false`, while an unexpected verification error redirects with `verified=error`. If `FRONTEND_URL` is not configured, the endpoint returns its original JSON response instead.
 
 ### Resend Verification Email
 
@@ -385,3 +400,6 @@ Recommended order:
 - Users must verify their email before login.
 - JWT tokens are stored in the user document and checked by the auth middleware.
 - Uploaded avatars are resized to 250x250 and stored in `public/avatars`.
+- Accepted avatar formats are JPEG, PNG, and WebP, with a maximum size of 5 MB.
+- Brevo is accessed through its HTTPS API, which works on Render services where outbound SMTP ports can be unavailable.
+- Files stored on Render's ephemeral filesystem can be lost after a restart or redeploy. For persistent production avatars, use object storage such as Cloudinary or Amazon S3.

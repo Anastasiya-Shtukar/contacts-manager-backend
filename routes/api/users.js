@@ -125,11 +125,16 @@ router.post("/login", async (req, res) => {
 
 router.get("/verify/:verificationToken", async (req, res) => {
   const { verificationToken } = req.params;
+  const frontendUrl = process.env.FRONTEND_URL;
 
   try {
     const user = await User.findOne({ verificationToken });
 
     if (!user) {
+      if (frontendUrl) {
+        return res.redirect(`${frontendUrl}/login?verified=false`);
+      }
+
       return res.status(404).json({ message: "User not found " });
     }
 
@@ -137,9 +142,18 @@ router.get("/verify/:verificationToken", async (req, res) => {
     user.verify = true;
     await user.save();
 
+    if (frontendUrl) {
+      return res.redirect(`${frontendUrl}/login?verified=true`);
+    }
+
     res.status(200).json({ message: "Verification successful" });
   } catch (error) {
     console.error("Verification error", error);
+
+    if (frontendUrl) {
+      return res.redirect(`${frontendUrl}/login?verified=error`);
+    }
+
     res.status(500).json({ message: "Server error" });
   }
 });
